@@ -1,64 +1,30 @@
-# ReadMe: Global Catering Productivity Dashboard
+# Global Catering Productivity Dashboard
 
-## 1. Data Model Sketch
-The original flat JSON was transformed into a Star Schema via Power Query:
-* **Dimensional Normalization:** Extracted a distinct `Region_Unit` table and a `Date_Table`.
-* **Customer Hierarchy:** Extracted the 3-letter Customer code from the `Unit_Customer` column to enable Customer-level baseline toggle.
-* **No external dependencies:** The dataset is embedded directly into the Power Query M-code (Advanced Editor) as a static table.
+## 1. Project Overview & Analysis Scope
+This project is an executive-level Power BI dashboard developed for a global airline catering network. It is designed to analyze monthly operational productivity across different regions, operating units, and customer hierarchies. 
 
----
-
-## 2. Key DAX Snippets
-
-### Weighted Contribution (Waterfall Variance)
-To ensure regional variances sum to the total global gap (since Productivity is a ratio), performance is weighted by TWH share:
-
-```dax
--- 1. TWH_Weighted_Prod_YTD = 
-VAR _AllRegTWH = CALCULATE(TOTALYTD([Sum_TWH], 'Date_Table'[Date]), ALL(Region_Unit[Region]))
-RETURN DIVIDE([TWH_YTD], _AllRegTWH) * [Productivity_YTD]
-
--- 2. TWH_Weighted_Prod_LY = 
-VAR _TWH_YTD_LY_All_Reg = CALCULATE([TWH_YTD_LY], ALL(Region_Unit[Region]))
-VAR _share = DIVIDE([TWH_YTD_LY], _TWH_YTD_LY_All_Reg)
-RETURN _share * [Productivity_YTD_LY]
-
--- 3. TWH_SHARE_DIFF = 
-ROUND( [TWH_Weighted_Prod_YTD] - [TWH_Weighted_Prod_LY], 2 )
-```
-
-### Z-Score Logic
-Calculated the Z-Score based on a unit's deviation from the regional median. 
-
-```dax
--- 1. ZScore_Outlier_Deviation = 
-VAR _CurrentDev = [Deviation_from_Median]
-VAR _StdDev = CALCULATE( 
-    STDEVX.P(VALUES(Region_Unit[Unit]), [Deviation_from_Median]),   
-    REMOVEFILTERS(Region_Unit[Unit]), 
-    VALUES(Region_Unit[Region])
-)
-RETURN DIVIDE(_CurrentDev, _StdDev)
-
--- 2. Zscore_Outlier_Flag = 
-IF( ABS([ZScore_Outlier_Deviation]) > 2, 1, 0 )
-```
+The core focus of the analysis is evaluating performance efficiency, tracking Year-Over-Year (YOY) and Month-Over-Month (MOM) growth, and identifying operational deviations. The data model was built from raw JSON files and transformed into a clean Star Schema to support fast and scalable analytics.
 
 ---
 
-## 3. Assumptions
-* **Aggregate Division:** Regional/Global KPIs are calculated as `SUM(WFCE) / SUM(TWH)`. As per instructions, unit-level KPIs are never averaged to reach a regional total.
-* **Rounding:** Standard KPIs use `ROUND([Measure], 2)`, while percentage measures use `ROUND([Measure], 4)` for accurate percentage display (e.g., 14.45%).
-* **Visual Indicators:** The Heatmap uses a red-to-green scale for median deviations, while the Trend chart employs dynamic Y-axis max/min bounds to maximize readability in tight data ranges.
-* **Trend Chart Dual-Line Logic:** Incorporates two reference lines:
-  * **3-Month Rolling Average:** Shows the historical trend (reacts to geo-filters, but ignores the baseline toggle and Calculation Group).
-  * **Dynamic Baseline (Median):** Interactive, adjusting to the selected aggregation toggle and Calculation Group.
-* **Default Latest Month Logic:** KPI cards and the Waterfall chart default to the latest available month but update dynamically when a specific month is selected. The Heatmap displays the full historical period, while the Z-Score flag remains fixed on the latest month.
-* **Outlier Definition:** Assumed that any unit exceeding a Z-Score of |2| standard deviations is a significant operational outlier, and flagged it accordingly.
+## 2. Key Visuals & Analytical Methods
+To translate complex data into actionable insights, the dashboard utilizes the following visuals and underlying methods:
+
+* **Smart KPI Cards:** Provide an instant snapshot of top-level productivity metrics. 
+  * *Method:* Uses advanced DAX with intelligent error handling. Instead of breaking or showing blanks when previous year/month data is missing, it dynamically displays user-friendly text like *"No LY Data"*.
+* **Interactive Trend Chart:** Visualizes historical performance and trajectory.
+  * *Method:* Employs a dual-line logic comparing a **3-Month Rolling Average** against a dynamically shifting **Median Baseline**. It uses Calculation Groups to allow users to seamlessly switch between Time Intelligence views (MTD, QTD, YTD) without cluttering the model.
+* **Waterfall Variance Chart:** Explains the "why" behind performance shifts.
+  * *Method:* Uses a **Weighted Contribution Method**. Because productivity is a ratio, regional performance gaps are weighted by their Total Working Hours (TWH) share to ensure they sum perfectly to the total global variance.
+* **Conditionally Formatted Heatmap:** Highlights unit-level performance over time.
+  * *Method:* Applies **Z-Score Statistical Logic**. It calculates each unit's deviation from the regional median and automatically flags extreme outliers (deviations >2 standard deviations) with clear visual indicators.
 
 ---
 
-## 4. Performance Notes
-* **Time Intelligence:** Used a Calculation Group slicer for the Trend Chart, while maintaining explicit DAX for the Waterfall, KPI card, and Heatmap.
-* **Optimized Architecture:** The data is organized into a clear structure (Fact and Dimension tables). All DAX measures are centralized in a Measure Table and organized into folders for easy maintenance.
-* **Variable (VAR):** All complex measures use variables to cache intermediate results.
+## 3. Business Value: What the User Gains
+By using this dashboard, executives and regional managers receive a clear, noise-free view of their operations. The key benefits include:
+
+* **Instant Outlier Detection:** Management no longer needs to dig through spreadsheets. The system automatically highlights which specific units are underperforming and require immediate attention.
+* **Accurate Root-Cause Analysis:** The weighted waterfall chart clearly illustrates exactly which regions are driving growth or dragging down global productivity.
+* **Dynamic Benchmarking:** Users can interactively toggle baselines (Global, Regional, or Customer-specific) to see how individual units stack up against their relevant peers.
+* **Fast, Data-Driven Decisions:** With a clean UI/UX and an optimized backend, decision-makers get immediate, reliable answers to guide their operational strategies.
