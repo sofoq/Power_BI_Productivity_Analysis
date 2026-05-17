@@ -5,6 +5,8 @@ This project is an executive-level Power BI dashboard developed for a global air
 
 The core focus of the analysis is evaluating performance efficiency, tracking Year-Over-Year (YOY) and Month-Over-Month (MOM) growth, and identifying operational deviations. The data model was built from raw JSON files and transformed into a clean Star Schema to support fast and scalable analytics.
 
+##  Live Demo  
+  Check out the dashboard here: [Productivity Analysis Dashboard](https://app.powerbi.com/view?r=eyJrIjoiZjI4NzU3NTgtMWYxZC00Yzg2LWEyMGQtNTE2YTk5MGNjNTI4IiwidCI6ImJkMGQ4ZDNmLTJjODYtNGRhMC04Y2FhLWZlNjFlNzNlNGQ5MyIsImMiOjEwfQ%3D%3D)
 ---
 
 ## 2. Key Visuals & Analytical Methods
